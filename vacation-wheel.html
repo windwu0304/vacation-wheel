@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Bonus Vacation Wheel</title>
+
+<style>
+
+body{
+text-align:center;
+font-family:Arial;
+margin:0;
+background:linear-gradient(#6ec6ff,#cfefff);
+color:#03396c;
+}
+
+/* 雲背景 */
+
+body:before{
+content:"";
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background-image:url("https://www.transparenttextures.com/patterns/clouds.png");
+opacity:0.4;
+z-index:-1;
+}
+
+/* 標題 */
+
+h1{
+font-size:42px;
+margin-top:30px;
+}
+
+.subtitle{
+font-size:20px;
+margin-bottom:10px;
+}
+
+/* 結果 */
+
+#winner{
+font-size:32px;
+color:#ff7b00;
+margin:10px;
+min-height:40px;
+}
+
+/* 指針 */
+
+.pointer{
+width:0;
+height:0;
+border-left:25px solid transparent;
+border-right:25px solid transparent;
+border-top:50px solid gold;
+margin:auto;
+position:relative;
+top:40px;
+z-index:10;
+}
+
+/* 按鈕 */
+
+button{
+padding:8px 16px;
+border:none;
+border-radius:8px;
+background:#0288d1;
+color:white;
+margin:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#03a9f4;
+}
+
+canvas{
+margin-top:-10px;
+}
+
+/* 名單區 */
+
+#listArea{
+margin-top:30px;
+width:420px;
+margin-left:auto;
+margin-right:auto;
+text-align:left;
+background:white;
+padding:15px;
+border-radius:10px;
+}
+
+.nameRow{
+display:flex;
+justify-content:space-between;
+background:#f0f9ff;
+padding:6px 10px;
+margin:4px 0;
+border-radius:6px;
+}
+
+.removeBtn{
+background:#90caf9;
+}
+
+input, textarea{
+padding:8px;
+width:100%;
+box-sizing:border-box;
+margin-top:6px;
+margin-bottom:6px;
+}
+
+textarea{
+height:80px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>🏖️ 加碼特休獎 🏝️</h1>
+
+<div class="subtitle">
+Bonus Vacation Wheel
+</div>
+
+<div class="subtitle">
+到底可以得到多少特休呢?<br>
+How many extra days off will you get?
+</div>
+
+<div id="winner"></div>
+
+<div class="pointer"></div>
+
+<canvas id="wheel" width="500" height="500"></canvas>
+
+<br>
+
+<button onclick="spin()">開始抽獎</button>
+
+<div id="listArea">
+
+<h3>名單管理</h3>
+
+<input id="nameInput" placeholder="輸入小時數 (例如 8)">
+<button onclick="addName()">新增</button>
+<button onclick="clearNames()">清空名單</button>
+
+<textarea id="bulkInput" placeholder="批量貼上數字 (每行一個)"></textarea>
+<button onclick="importNames()">匯入名單</button>
+
+<h4>目前選項</h4>
+<div id="nameList"></div>
+
+</div>
+
+<script>
+
+let names = JSON.parse(localStorage.getItem("vacationNames")) || ["8","16","24","32"]
+
+const colors=["#4fc3f7","#fff59d"]
+
+const canvas=document.getElementById("wheel")
+const ctx=canvas.getContext("2d")
+
+let rotation=0
+let spinning=false
+
+function saveNames(){
+localStorage.setItem("vacationNames",JSON.stringify(names))
+}
+
+function drawWheel(){
+
+ctx.clearRect(0,0,500,500)
+
+if(names.length===0) return
+
+let arc=Math.PI*2/names.length
+
+for(let i=0;i<names.length;i++){
+
+let angle=rotation+i*arc
+
+ctx.fillStyle=colors[i%colors.length]
+
+ctx.beginPath()
+ctx.moveTo(250,250)
+ctx.arc(250,250,220,angle,angle+arc)
+ctx.fill()
+
+ctx.save()
+
+ctx.translate(250,250)
+ctx.rotate(angle+arc/2)
+
+ctx.fillStyle="#03396c"
+ctx.font="20px Arial"
+
+ctx.fillText(names[i]+"h",120,10)
+
+ctx.restore()
+
+}
+
+}
+
+function updateList(){
+
+let list=document.getElementById("nameList")
+
+list.innerHTML=""
+
+names.forEach((name,index)=>{
+
+let row=document.createElement("div")
+row.className="nameRow"
+
+row.innerHTML=
+`<span>${name} 小時</span>
+<button class="removeBtn" onclick="removeName(${index})">❌</button>`
+
+list.appendChild(row)
+
+})
+
+saveNames()
+drawWheel()
+
+}
+
+function addName(){
+
+let input=document.getElementById("nameInput")
+
+if(input.value.trim()!==""){
+
+names.push(input.value.trim())
+
+input.value=""
+
+updateList()
+
+}
+
+}
+
+function removeName(index){
+
+names.splice(index,1)
+
+updateList()
+
+}
+
+function clearNames(){
+
+names=[]
+updateList()
+
+}
+
+function importNames(){
+
+let text=document.getElementById("bulkInput").value.trim()
+
+if(!text) return
+
+let arr=text.split("\n").map(n=>n.trim()).filter(n=>n)
+
+names=names.concat(arr)
+
+updateList()
+
+}
+
+function easeOut(t){
+return 1-Math.pow(1-t,3)
+}
+
+function spin(){
+
+if(spinning || names.length===0) return
+
+spinning=true
+
+document.getElementById("winner").innerText=""
+
+let duration=4000
+let start=null
+
+let arcDeg=360/names.length
+let boundaryIndex=Math.floor(Math.random()*names.length)
+let boundaryDeg=boundaryIndex*arcDeg
+let offset=(Math.random()*6-3)
+
+let targetDeg=boundaryDeg+offset
+
+let pointerDeg=270
+
+let finalRotation=pointerDeg-targetDeg+360*5
+
+function animate(time){
+
+if(!start) start=time
+
+let progress=(time-start)/duration
+if(progress>1) progress=1
+
+let eased=easeOut(progress)
+
+rotation=(finalRotation*eased)*Math.PI/180
+
+drawWheel()
+
+if(progress<1){
+
+requestAnimationFrame(animate)
+
+}else{
+
+spinning=false
+
+let arc=Math.PI*2/names.length
+let pointerAngle=(3*Math.PI/2-rotation)%(Math.PI*2)
+
+if(pointerAngle<0) pointerAngle+=Math.PI*2
+
+let index=Math.floor(pointerAngle/arc)
+
+let result=names[index]
+
+document.getElementById("winner").innerText=
+"🎉 獲得 "+result+" ⏰ 小時"
+
+}
+
+}
+
+requestAnimationFrame(animate)
+
+}
+
+updateList()
+
+</script>
+
+</body>
+</html>
