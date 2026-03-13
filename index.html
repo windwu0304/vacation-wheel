@@ -40,7 +40,7 @@ font-size:20px;
 margin-bottom:10px;
 }
 
-/* 結果 */
+/* 抽獎結果 */
 
 #winner{
 font-size:32px;
@@ -151,11 +151,11 @@ How many extra days off will you get?
 
 <h3>名單管理</h3>
 
-<input id="nameInput" placeholder="輸入小時數 (例如 8)">
+<input id="nameInput" placeholder="輸入選項">
 <button onclick="addName()">新增</button>
 <button onclick="clearNames()">清空名單</button>
 
-<textarea id="bulkInput" placeholder="批量貼上數字 (每行一個)"></textarea>
+<textarea id="bulkInput" placeholder="批量貼上 (每行一個)"></textarea>
 <button onclick="importNames()">匯入名單</button>
 
 <h4>目前選項</h4>
@@ -165,7 +165,9 @@ How many extra days off will you get?
 
 <script>
 
-let names = JSON.parse(localStorage.getItem("vacationNames")) || ["8","16","24","32"]
+/* 讀取暫存 */
+
+let names = JSON.parse(localStorage.getItem("vacationNames")) || []
 
 const colors=["#4fc3f7","#fff59d"]
 
@@ -175,9 +177,13 @@ const ctx=canvas.getContext("2d")
 let rotation=0
 let spinning=false
 
+/* 儲存名單 */
+
 function saveNames(){
 localStorage.setItem("vacationNames",JSON.stringify(names))
 }
+
+/* 畫轉盤 */
 
 function drawWheel(){
 
@@ -206,13 +212,15 @@ ctx.rotate(angle+arc/2)
 ctx.fillStyle="#03396c"
 ctx.font="20px Arial"
 
-ctx.fillText(names[i]+"h",120,10)
+ctx.fillText(names[i],120,10)
 
 ctx.restore()
 
 }
 
 }
+
+/* 更新名單 */
 
 function updateList(){
 
@@ -226,7 +234,7 @@ let row=document.createElement("div")
 row.className="nameRow"
 
 row.innerHTML=
-`<span>${name} 小時</span>
+`<span>${name}</span>
 <button class="removeBtn" onclick="removeName(${index})">❌</button>`
 
 list.appendChild(row)
@@ -237,6 +245,8 @@ saveNames()
 drawWheel()
 
 }
+
+/* 新增 */
 
 function addName(){
 
@@ -254,6 +264,8 @@ updateList()
 
 }
 
+/* 刪除 */
+
 function removeName(index){
 
 names.splice(index,1)
@@ -262,12 +274,16 @@ updateList()
 
 }
 
+/* 清空 */
+
 function clearNames(){
 
 names=[]
 updateList()
 
 }
+
+/* 匯入 */
 
 function importNames(){
 
@@ -283,9 +299,13 @@ updateList()
 
 }
 
+/* 緩停 */
+
 function easeOut(t){
 return 1-Math.pow(1-t,3)
 }
+
+/* 轉盤 */
 
 function spin(){
 
@@ -340,7 +360,7 @@ let index=Math.floor(pointerAngle/arc)
 let result=names[index]
 
 document.getElementById("winner").innerText=
-"🎉 獲得 "+result+" ⏰ 小時"
+"🎉 獲得 "+result
 
 }
 
@@ -350,10 +370,11 @@ requestAnimationFrame(animate)
 
 }
 
+/* 初始化 */
+
 updateList()
 
 </script>
 
 </body>
-
 </html>
